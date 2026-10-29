@@ -208,10 +208,3 @@ docuchat/
 - **Separate API and UI.** The UI talks to the backend only over HTTP, so another frontend or a Slack bot could use the same API.
 - **Sources streamed before tokens.** The UI can show where the answer comes from while it is still being generated.
 
-## 🛣️ Future Improvements
-
-- OCR for scanned PDFs (Tesseract / PyMuPDF OCR)
-- Hybrid search (BM25 + vectors) and a cross-encoder re-ranker
-- Answer-quality evaluation with RAGAS (faithfulness, answer relevance)
-- User authentication and per-user collections
-- Support for DOCX, TXT and web URLs
