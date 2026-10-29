@@ -2,22 +2,19 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    HF_HOME=/home/user/.cache/huggingface
+    PIP_NO_CACHE_DIR=1
 
-# Hugging Face Spaces runs containers as UID 1000.
+# Run as a non-root user (also what Hugging Face Spaces expects).
 RUN useradd -m -u 1000 user
 WORKDIR /home/user/app
 
-# CPU-only PyTorch keeps the image ~2 GB smaller than the default CUDA build.
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 USER user
 
-# Bake the embedding model into the image so startup doesn't download it.
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+# Bake the ONNX embedding model into the image so startup doesn't download it.
+RUN python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()(['warm-up'])"
 
 COPY --chown=user . .
 

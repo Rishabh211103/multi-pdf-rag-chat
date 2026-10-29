@@ -1,14 +1,3 @@
----
-title: DocuChat
-emoji: 📄
-colorFrom: purple
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
-short_description: Chat with multiple PDFs using RAG
----
-
 # 📄 DocuChat: Chat with Multiple PDFs using RAG
 
 DocuChat is an end-to-end **Retrieval-Augmented Generation (RAG)** application. You upload any number of PDFs and ask questions about them in natural language. Every answer cites the source file and page number.
@@ -26,7 +15,7 @@ Built entirely in Python with **LangChain**, **ChromaDB**, **FastAPI** and **Str
 - **MMR retrieval**: Maximal Marginal Relevance gives diverse context when several PDFs overlap.
 - **Streaming responses**: tokens stream from the LLM to the UI over NDJSON.
 - **De-duplication**: documents are identified by SHA-256 content hash, so a file is never indexed twice. Re-ingesting is idempotent.
-- **Pluggable models**: switch the LLM or embeddings with one environment variable. Local HuggingFace embeddings are the default, so no API cost.
+- **Pluggable models**: switch the LLM or embeddings with one environment variable. Local `all-MiniLM-L6-v2` embeddings on ONNX Runtime are the default, so there's no API cost and no PyTorch install.
 - **Persistent storage**: ChromaDB stores the vectors and SQLite stores the document registry. Both survive restarts.
 - **Evaluation script**: measures retrieval quality with Hit-Rate@k and MRR on a labelled question set.
 - **Tested and containerised**: the pytest suite uses fake LLMs and embeddings, so it needs no API keys. Docker Compose runs the full stack.
@@ -67,14 +56,14 @@ flowchart LR
 |---|---|
 | LLM orchestration | LangChain (LCEL, prompt templates, retrievers) |
 | Vector database | ChromaDB (persistent, cosine HNSW) |
-| Embeddings | Sentence-Transformers `all-MiniLM-L6-v2` (default), OpenAI, Ollama |
+| Embeddings | `all-MiniLM-L6-v2` on ONNX Runtime (default), Sentence-Transformers, OpenAI, Ollama |
 | LLMs | Groq (GPT-OSS 120B), Ollama (Llama 3, Mistral, …), Anthropic Claude, OpenAI GPT |
 | PDF parsing | PyMuPDF |
 | Backend | FastAPI, Pydantic v2, pydantic-settings |
 | Frontend | Streamlit |
 | Storage | ChromaDB + SQLite |
 | Testing | pytest, FastAPI TestClient, LangChain fake models |
-| Deployment | Docker, Docker Compose |
+| Deployment | Streamlit Community Cloud, Docker, Docker Compose |
 
 ## 🚀 Getting Started
 
@@ -128,6 +117,18 @@ docker compose up --build
 
 The UI is at http://localhost:8501 and the API docs at http://localhost:8000/docs. When using Ollama with Docker, set `OLLAMA_BASE_URL=http://host.docker.internal:11434`.
 
+### Deploy for free on Streamlit Community Cloud
+
+1. Push the repo to GitHub, then create an app at [share.streamlit.io](https://share.streamlit.io) with main file `ui/streamlit_app.py`. Under **Advanced settings**, choose Python 3.11.
+2. In **Secrets**, add:
+   ```toml
+   GROQ_API_KEY = "gsk_..."
+   EMBEDDED_API = "true"
+   ```
+   `EMBEDDED_API` makes the Streamlit app start the FastAPI backend in a background thread, because Community Cloud runs only one process.
+
+Storage on Community Cloud isn't persistent, so uploaded PDFs are cleared whenever the app restarts.
+
 ## 🔌 API
 
 Interactive docs: `http://localhost:8000/docs`
@@ -161,7 +162,8 @@ All settings are environment variables (see `.env.example`):
 |---|---|---|
 | `LLM_PROVIDER` | `groq` | `groq`, `ollama`, `anthropic`, `openai` |
 | `LLM_MODEL` | provider default | Override the model name |
-| `EMBEDDING_PROVIDER` | `huggingface` | `huggingface`, `openai`, `ollama` |
+| `EMBEDDING_PROVIDER` | `onnx` | `onnx`, `huggingface` (needs `sentence-transformers`), `openai`, `ollama` |
+| `EMBEDDED_API` | `false` | `true` makes the Streamlit app start the backend itself (for single-process hosts) |
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | `1000` / `150` | Text splitter settings (characters) |
 | `RETRIEVAL_K` / `RETRIEVAL_FETCH_K` | `5` / `20` | Passages returned / candidates considered by MMR |
 | `USE_MMR` | `true` | MMR or plain similarity search |

@@ -16,8 +16,9 @@ langchain-chroma>=0.2
 chromadb>=0.5
 
 # --- Embeddings ---
-langchain-huggingface>=0.1
-sentence-transformers>=3.0
+# The default "onnx" provider runs all-MiniLM-L6-v2 on ONNX Runtime, which ships
+# with chromadb, so no PyTorch is needed. For EMBEDDING_PROVIDER=huggingface:
+#   pip install langchain-huggingface sentence-transformers
 
 # --- LLM providers (pick one via LLM_PROVIDER) ---
 langchain-anthropic>=0.3
