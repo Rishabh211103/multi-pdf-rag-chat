@@ -4,7 +4,11 @@ import html
 import itertools
 import json
 import os
+import sys
+import threading
+import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 import streamlit as st
@@ -12,6 +16,10 @@ import streamlit as st
 # 127.0.0.1 rather than localhost: on Windows, "localhost" tries IPv6 first and
 # adds ~2 s to every request because uvicorn only listens on IPv4 by default.
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
+
+# Single-process hosts (e.g. Streamlit Community Cloud) can't run uvicorn separately,
+# so with EMBEDDED_API=true the UI starts the FastAPI backend in a background thread.
+EMBEDDED_API = os.getenv("EMBEDDED_API", "").lower() in {"1", "true", "yes"}
 
 SUGGESTED_QUESTIONS = [
     "Summarize the key ideas of these documents",
@@ -28,6 +36,27 @@ st.markdown(
 
 if "messages" not in st.session_state:
     st.session_state.messages = []  # each: {"role", "content", "sources"}
+
+
+@st.cache_resource(show_spinner="Starting the backend and loading the embedding model…")
+def start_embedded_api() -> None:
+    import uvicorn
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from app.main import app
+
+    url = urlparse(API_URL)
+    server = uvicorn.Server(uvicorn.Config(app, host=url.hostname, port=url.port or 8000))
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        if not thread.is_alive():
+            raise RuntimeError("The embedded API failed to start; check the logs.")
+        time.sleep(0.5)
+
+
+if EMBEDDED_API:
+    start_embedded_api()
 
 
 def api(method: str, path: str, timeout: float = 30, **kwargs):

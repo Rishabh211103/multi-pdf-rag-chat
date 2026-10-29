@@ -19,6 +19,7 @@ DEFAULT_LLM_MODELS = {
 }
 
 DEFAULT_EMBEDDING_MODELS = {
+    "onnx": "all-MiniLM-L6-v2",
     "huggingface": "sentence-transformers/all-MiniLM-L6-v2",
     "openai": "text-embedding-3-small",
     "ollama": "nomic-embed-text",
@@ -87,10 +88,31 @@ def build_chat_model(settings: Settings) -> BaseChatModel:
     raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
 
 
+class OnnxMiniLMEmbeddings(Embeddings):
+    """all-MiniLM-L6-v2 run through ONNX Runtime (bundled with ChromaDB), so no PyTorch is needed."""
+
+    def __init__(self):
+        from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+
+        self._embed = ONNXMiniLM_L6_V2()
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [vector.tolist() for vector in self._embed(texts)]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.embed_documents([text])[0]
+
+
 def build_embeddings(settings: Settings) -> Embeddings:
     model = embedding_model_name(settings)
 
+    if settings.embedding_provider == "onnx":
+        if model != DEFAULT_EMBEDDING_MODELS["onnx"]:
+            raise ValueError("The onnx embedding provider only supports all-MiniLM-L6-v2.")
+        return OnnxMiniLMEmbeddings()
+
     if settings.embedding_provider == "huggingface":
+        # Optional: pip install langchain-huggingface sentence-transformers
         from langchain_huggingface import HuggingFaceEmbeddings
 
         return HuggingFaceEmbeddings(

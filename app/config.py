@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
 
     # Embeddings
-    embedding_provider: Literal["huggingface", "openai", "ollama"] = "huggingface"
+    embedding_provider: Literal["onnx", "huggingface", "openai", "ollama"] = "onnx"
     embedding_model: str | None = None
 
     # Chunking & retrieval

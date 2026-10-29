@@ -24,7 +24,7 @@ async def lifespan(_: FastAPI):
     # Load the embedding model before accepting requests, so the first
     # upload/chat doesn't stall (and time out) while the model loads.
     logger.info("Loading embedding model...")
-    await run_in_threadpool(get_vector_store)
+    await run_in_threadpool(lambda: get_vector_store().embeddings.embed_query("warm-up"))
     logger.info("Embedding model ready.")
     yield
 

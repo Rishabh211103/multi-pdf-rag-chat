@@ -4,19 +4,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-WORKDIR /app
-
-# CPU-only PyTorch keeps the image ~2 GB smaller than the default CUDA build.
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Run as a non-root user (also what Hugging Face Spaces expects).
+RUN useradd -m -u 1000 user
+WORKDIR /home/user/app
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY app ./app
-COPY ui ./ui
-COPY .streamlit ./.streamlit
-COPY scripts ./scripts
+USER user
 
-EXPOSE 8000 8501
+# Bake the ONNX embedding model into the image so startup doesn't download it.
+RUN python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()(['warm-up'])"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY --chown=user . .
+
+EXPOSE 7860
+CMD ["python", "scripts/serve.py"]
