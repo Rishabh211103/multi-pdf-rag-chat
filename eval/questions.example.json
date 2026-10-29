@@ -1,0 +1,5 @@
+[
+  {"question": "What is the termination notice period?", "source": "contract.pdf", "page": 4},
+  {"question": "Which dataset was used for evaluation?", "source": "paper.pdf"},
+  {"question": "What was the total revenue in FY2024?", "source": "annual_report.pdf", "page": 12}
+]

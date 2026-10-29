@@ -1,0 +1,10 @@
+[project]
+name = "docuchat"
+version = "1.0.0"
+description = "Chat with multiple PDFs using Retrieval-Augmented Generation (LangChain + ChromaDB + FastAPI + Streamlit)"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
