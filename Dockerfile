@@ -2,21 +2,24 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    HF_HOME=/home/user/.cache/huggingface
 
-WORKDIR /app
+# Hugging Face Spaces runs containers as UID 1000.
+RUN useradd -m -u 1000 user
+WORKDIR /home/user/app
 
 # CPU-only PyTorch keeps the image ~2 GB smaller than the default CUDA build.
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
-
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY app ./app
-COPY ui ./ui
-COPY .streamlit ./.streamlit
-COPY scripts ./scripts
+USER user
 
-EXPOSE 8000 8501
+# Bake the embedding model into the image so startup doesn't download it.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY --chown=user . .
+
+EXPOSE 7860
+CMD ["python", "scripts/serve.py"]

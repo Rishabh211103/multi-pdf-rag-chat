@@ -1,3 +1,14 @@
+---
+title: DocuChat
+emoji: 📄
+colorFrom: purple
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+short_description: Chat with multiple PDFs using RAG
+---
+
 # 📄 DocuChat: Chat with Multiple PDFs using RAG
 
 DocuChat is an end-to-end **Retrieval-Augmented Generation (RAG)** application. You upload any number of PDFs and ask questions about them in natural language. Every answer cites the source file and page number.
